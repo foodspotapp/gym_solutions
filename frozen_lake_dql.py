@@ -34,7 +34,7 @@ class ReplayMemory:
 
   def append(self, experience):
     """
-    experience is a tuple of (state, action, reward, new_state)
+    experience is a tuple of (state, action, new_state, reward, status)
     Args:
       experience:
 
@@ -49,12 +49,16 @@ class ReplayMemory:
   def __len__(self):
     return len(self.memory)
 
+  def __iter__(self):
+    for x in self.memory:
+      yield x[3]
+
 
 # FrozeLake Deep Q-Learning
 class FrozenLakeDQL:
   # Hyperparameters (adjustable)
   learning_rate_a = 0.001  # learning rate (alpha)
-  discount_factor_g = 0.9  # discount rate (gamma)
+  gamma = 0.9  # discount rate (gamma)
   network_sync_rate = 10  # number of steps the agent takes before syncing the policy and target network
   replay_memory_size = 1000  # size of replay memory
   mini_batch_size = 32  # size of the training data set sampled from the replay memory
@@ -66,7 +70,7 @@ class FrozenLakeDQL:
   ACTIONS = ['L', 'D', 'R', 'U']  # for printing 0,1,2,3 => L(eft),D(own),R(ight),U(p)
 
   # Train the FrozeLake environment
-  def train(self, episodes, render=False, is_slippery=False):
+  def train(self, episodes, freq: int = 500, render: bool = False, is_slippery: bool = False):
     # Create FrozenLake instance
     env = gym.make('FrozenLake-v1', map_name="4x4", is_slippery=is_slippery, render_mode='human' if render else None)
     num_states = env.observation_space.n
@@ -98,6 +102,10 @@ class FrozenLakeDQL:
     step_count = 0
 
     for i in range(episodes):
+      if i % freq == 0:
+        print(f"episode: {i}, {len(memory)}, {sum(memory)}")
+        self.print_dqn(policy_dqn)
+
       state = env.reset()[0]  # Initialize to state 0
       terminated = False  # True when agent falls in hole or reached goal
       truncated = False  # True when agent takes more than 200 actions
@@ -185,9 +193,9 @@ class FrozenLakeDQL:
       else:
         # Calculate target q value
         with torch.no_grad():
-          target = torch.FloatTensor(
-            reward + self.discount_factor_g * target_dqn(self.state_to_dqn_input(new_state, num_states)).max()
-          )
+          future_rewards = target_dqn(self.state_to_dqn_input(new_state, num_states)).max()
+          target_q_value = reward + self.gamma * future_rewards
+          target = torch.FloatTensor(target_q_value)
 
       # Get the current set of Q values
       current_q = policy_dqn(self.state_to_dqn_input(state, num_states))
@@ -277,5 +285,5 @@ class FrozenLakeDQL:
 if __name__ == '__main__':
   frozen_lake = FrozenLakeDQL()
   is_slippery = False
-  frozen_lake.train(1000, is_slippery=is_slippery)
+  # frozen_lake.train(2000, is_slippery=is_slippery)
   frozen_lake.test(10, is_slippery=is_slippery)
