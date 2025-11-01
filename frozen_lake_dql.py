@@ -285,5 +285,5 @@ class FrozenLakeDQL:
 if __name__ == '__main__':
   frozen_lake = FrozenLakeDQL()
   is_slippery = False
-  # frozen_lake.train(2000, is_slippery=is_slippery)
+  frozen_lake.train(3000, is_slippery=is_slippery)
   frozen_lake.test(10, is_slippery=is_slippery)
