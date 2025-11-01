@@ -10,12 +10,16 @@ import torch.nn.functional as F
 
 # Define model
 class DQN(nn.Module):
-  def __init__(self, in_states, h1_nodes, out_actions):
+  def __init__(self, in_size: int, hidden_size: int, out_size: int):
     super().__init__()
 
+    """
+    a simple 2-layer mlp
+    """
+
     # Define network layers
-    self.fc1 = nn.Linear(in_states, h1_nodes)  # first fully connected layer
-    self.out = nn.Linear(h1_nodes, out_actions)  # ouptut layer w
+    self.fc1 = nn.Linear(in_size, hidden_size)  # first fully connected layer
+    self.out = nn.Linear(hidden_size, out_size)  # ouptut layer w
 
   def forward(self, x):
     x = F.relu(self.fc1(x))  # Apply rectified linear unit (ReLU) activation
@@ -64,8 +68,8 @@ class FrozenLakeDQL():
     memory = ReplayMemory(self.replay_memory_size)
 
     # Create policy and target network. Number of nodes in the hidden layer can be adjusted.
-    policy_dqn = DQN(in_states=num_states, h1_nodes=num_states, out_actions=num_actions)
-    target_dqn = DQN(in_states=num_states, h1_nodes=num_states, out_actions=num_actions)
+    policy_dqn = DQN(num_states, num_states, num_actions)
+    target_dqn = DQN(num_states, num_states, num_actions)
 
     # Make the target and policy networks the same (copy weights/biases from one network to the other)
     target_dqn.load_state_dict(policy_dqn.state_dict())
@@ -216,7 +220,7 @@ class FrozenLakeDQL():
     num_actions = env.action_space.n
 
     # Load learned policy
-    policy_dqn = DQN(in_states=num_states, h1_nodes=num_states, out_actions=num_actions)
+    policy_dqn = DQN(num_states, num_states, num_actions)
     policy_dqn.load_state_dict(torch.load("frozen_lake_dql.pt"))
     policy_dqn.eval()  # switch model to evaluation mode
 
